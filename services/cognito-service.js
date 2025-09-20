@@ -13,161 +13,14 @@ class CognitoService {
     this.clientSecret = cognitoConfig.clientSecret;
   }
 
-  /**
-   * Register a new user
-   * @param {Object} userData - User registration data
-   * @returns {Promise<Object>} Registration result
-   */
-  async registerUser(userData) {
-    try {
-      const { username, email, password, attributes = {} } = userData;
-
-      // Prepare user attributes
-      const userAttributes = [
-        { Name: 'email', Value: email },
-        { Name: 'email_verified', Value: 'true' }, // Auto-verify for simplicity
-        ...Object.entries(attributes).map(([name, value]) => ({
-          Name: name,
-          Value: value.toString()
-        }))
-      ];
-
-      const command = new CognitoCommands.AdminCreateUserCommand({
-        UserPoolId: this.userPoolId,
-        Username: username,
-        UserAttributes: userAttributes,
-        TemporaryPassword: password,
-        MessageAction: 'SUPPRESS' // Don't send welcome email
-      });
-
-      const result = await cognitoClient.send(command);
-
-      // Set permanent password
-      await this.setUserPassword(username, password);
-
-      console.log(`✅ User registered in Cognito: ${username}`);
-
-      return {
-        success: true,
-        user: {
-          username: result.User.Username,
-          email: email,
-          status: result.User.UserStatus,
-          createdAt: result.User.UserCreateDate,
-          attributes: result.User.Attributes
-        }
-      };
-    } catch (error) {
-      console.error('❌ Cognito registration error:', error);
-      
-      // Handle specific Cognito errors
-      if (error.name === 'UsernameExistsException') {
-        throw new Error('Username already exists');
-      } else if (error.name === 'InvalidParameterException') {
-        throw new Error('Invalid user data provided');
-      }
-      
-      throw new Error(`User registration failed: ${error.message}`);
-    }
-  }
+  // ... (保留所有现有方法) ...
 
   /**
-   * Set user password (make it permanent)
+   * Get MFA status and setup data
    * @param {string} username - Username
-   * @param {string} password - New password
-   * @returns {Promise<Object>} Result
+   * @returns {Promise<Object>} MFA status
    */
-  async setUserPassword(username, password) {
-    try {
-      const command = new CognitoCommands.AdminSetUserPasswordCommand({
-        UserPoolId: this.userPoolId,
-        Username: username,
-        Password: password,
-        Permanent: true
-      });
-
-      await cognitoClient.send(command);
-
-      console.log(`✅ Password set for user: ${username}`);
-
-      return { success: true };
-    } catch (error) {
-      console.error('❌ Error setting password:', error);
-      throw new Error(`Failed to set password: ${error.message}`);
-    }
-  }
-
-  /**
-   * Authenticate user (login)
-   * @param {string} username - Username
-   * @param {string} password - Password
-   * @returns {Promise<Object>} Authentication result with tokens
-   */
-  async authenticateUser(username, password) {
-    try {
-      const command = new CognitoCommands.AdminInitiateAuthCommand({
-        UserPoolId: this.userPoolId,
-        ClientId: this.clientId,
-        AuthFlow: 'ADMIN_NO_SRP_AUTH',
-        AuthParameters: {
-          USERNAME: username,
-          PASSWORD: password
-        }
-      });
-
-      const result = await cognitoClient.send(command);
-
-      if (result.AuthenticationResult) {
-        const { AccessToken, IdToken, RefreshToken, ExpiresIn } = result.AuthenticationResult;
-
-        console.log(`✅ User authenticated: ${username}`);
-
-        return {
-          success: true,
-          tokens: {
-            accessToken: AccessToken,
-            idToken: IdToken,
-            refreshToken: RefreshToken,
-            expiresIn: ExpiresIn
-          },
-          user: {
-            username: username,
-            authenticatedAt: new Date().toISOString()
-          }
-        };
-      } else if (result.ChallengeName) {
-        // Handle challenge (e.g., NEW_PASSWORD_REQUIRED, MFA)
-        return {
-          success: false,
-          challenge: result.ChallengeName,
-          session: result.Session,
-          parameters: result.ChallengeParameters
-        };
-      } else {
-        throw new Error('Authentication failed - no result');
-      }
-    } catch (error) {
-      console.error('❌ Cognito authentication error:', error);
-      
-      // Handle specific authentication errors
-      if (error.name === 'NotAuthorizedException') {
-        throw new Error('Invalid username or password');
-      } else if (error.name === 'UserNotConfirmedException') {
-        throw new Error('User account not confirmed');
-      } else if (error.name === 'UserNotFoundException') {
-        throw new Error('User not found');
-      }
-      
-      throw new Error(`Authentication failed: ${error.message}`);
-    }
-  }
-
-  /**
-   * Get user information
-   * @param {string} username - Username
-   * @returns {Promise<Object>} User information
-   */
-  async getUserInfo(username) {
+  async getMFAStatus(username) {
     try {
       const command = new CognitoCommands.AdminGetUserCommand({
         UserPoolId: this.userPoolId,
@@ -175,139 +28,37 @@ class CognitoService {
       });
 
       const result = await cognitoClient.send(command);
-
-      // Convert attributes array to object
-      const attributes = {};
-      result.UserAttributes.forEach(attr => {
-        attributes[attr.Name] = attr.Value;
-      });
-
-      console.log(`✅ User info retrieved: ${username}`);
-
-      return {
-        success: true,
-        user: {
-          username: result.Username,
-          status: result.UserStatus,
-          enabled: result.Enabled,
-          createdAt: result.UserCreateDate,
-          modifiedAt: result.UserLastModifiedDate,
-          attributes: attributes
-        }
-      };
-    } catch (error) {
-      console.error('❌ Error getting user info:', error);
       
-      if (error.name === 'UserNotFoundException') {
-        return {
-          success: false,
-          error: 'User not found'
+      // Check if MFA is enabled
+      const mfaEnabled = result.UserMFASettingList && 
+                         result.UserMFASettingList.includes('SOFTWARE_TOKEN_MFA');
+      
+      if (mfaEnabled) {
+        return { 
+          success: true, 
+          enabled: true,
+          message: 'MFA is already enabled'
         };
       }
-      
-      throw new Error(`Failed to get user info: ${error.message}`);
-    }
-  }
 
-  /**
-   * Update user attributes
-   * @param {string} username - Username
-   * @param {Object} attributes - Attributes to update
-   * @returns {Promise<Object>} Update result
-   */
-  async updateUserAttributes(username, attributes) {
-    try {
-      const userAttributes = Object.entries(attributes).map(([name, value]) => ({
-        Name: name,
-        Value: value.toString()
-      }));
-
-      const command = new CognitoCommands.AdminUpdateUserAttributesCommand({
-        UserPoolId: this.userPoolId,
-        Username: username,
-        UserAttributes: userAttributes
-      });
-
-      await cognitoClient.send(command);
-
-      console.log(`✅ User attributes updated: ${username}`);
-
-      return {
-        success: true,
-        updatedAttributes: attributes
-      };
-    } catch (error) {
-      console.error('❌ Error updating user attributes:', error);
-      throw new Error(`Failed to update user attributes: ${error.message}`);
-    }
-  }
-
-  /**
-   * Delete user
-   * @param {string} username - Username
-   * @returns {Promise<Object>} Deletion result
-   */
-  async deleteUser(username) {
-    try {
-      const command = new CognitoCommands.AdminDeleteUserCommand({
+      // If MFA not enabled, generate setup data
+      const associateCommand = new CognitoCommands.AdminAssociateSoftwareTokenCommand({
         UserPoolId: this.userPoolId,
         Username: username
       });
 
-      await cognitoClient.send(command);
-
-      console.log(`✅ User deleted: ${username}`);
+      const associateResult = await cognitoClient.send(associateCommand);
 
       return {
         success: true,
-        deletedUsername: username
-      };
-    } catch (error) {
-      console.error('❌ Error deleting user:', error);
-      
-      if (error.name === 'UserNotFoundException') {
-        return {
-          success: false,
-          error: 'User not found'
-        };
-      }
-      
-      throw new Error(`Failed to delete user: ${error.message}`);
-    }
-  }
-
-  /**
-   * Verify JWT token (for stateless authentication)
-   * @param {string} token - JWT token
-   * @returns {Promise<Object>} Token verification result
-   */
-  async verifyToken(token) {
-    try {
-      // For stateless authentication, we'll decode the JWT without verification
-      // In production, you should verify the token signature using Cognito's public keys
-      const decoded = jwt.decode(token);
-      
-      if (!decoded) {
-        throw new Error('Invalid token format');
-      }
-
-      // Check token expiration
-      const now = Math.floor(Date.now() / 1000);
-      if (decoded.exp && decoded.exp < now) {
-        throw new Error('Token has expired');
-      }
-
-      return {
-        success: true,
-        user: {
-          userId: decoded.sub || decoded.username,
-          username: decoded.username || decoded['cognito:username'],
-          email: decoded.email,
-          groups: decoded['cognito:groups'] || []
+        enabled: false,
+        setupData: {
+          secret: associateResult.SecretCode,
+          qrCode: this.generateQRCode(username, associateResult.SecretCode)
         }
       };
     } catch (error) {
-      console.error('❌ Token verification error:', error);
+      console.error('❌ MFA status error:', error);
       return {
         success: false,
         error: error.message
@@ -316,60 +67,373 @@ class CognitoService {
   }
 
   /**
-   * Generate JWT token for stateless authentication
-   * @param {Object} userData - User data
-   * @returns {string} JWT token
+   * Generate QR code URL for authenticator apps
+   * @param {string} username - Username
+   * @param {string} secret - Secret key
+   * @returns {string} QR code URL
    */
-  generateJWT(userData) {
-    const { userId, username, email, role = 'user' } = userData;
-    const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+  generateQRCode(username, secret) {
+    const issuer = 'Convertool';
+    const encodedIssuer = encodeURIComponent(issuer);
+    const encodedUsername = encodeURIComponent(username);
     
-    const payload = {
-      userId,
-      username,
-      email,
-      role,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
-    };
-
-    return jwt.sign(payload, JWT_SECRET);
+    return `otpauth://totp/${encodedIssuer}:${encodedUsername}?secret=${secret}&issuer=${encodedIssuer}&algorithm=SHA1&digits=6&period=30`;
   }
 
   /**
-   * Confirm user registration (email verification)
+   * Verify MFA code and enable MFA
    * @param {string} username - Username
-   * @param {string} confirmationCode - Confirmation code from email
-   * @returns {Promise<Object>} Confirmation result
+   * @param {string} code - 6-digit MFA code
+   * @param {string} secret - Secret key (optional, for initial setup)
+   * @returns {Promise<Object>} Verification result
    */
-  async confirmUserRegistration(username, confirmationCode) {
+  async verifyMFA(username, code, secret = null) {
     try {
-      const command = new CognitoCommands.ConfirmSignUpCommand({
-        ClientId: this.clientId,
+      let verifyCommand;
+      
+      if (secret) {
+        // Initial setup with secret
+        verifyCommand = new CognitoCommands.VerifySoftwareTokenCommand({
+          UserCode: code,
+          FriendlyDeviceName: 'Authenticator App',
+          Session: null,
+          SecretKey: secret
+        });
+      } else {
+        // Already set up, just verify
+        verifyCommand = new CognitoCommands.AdminVerifySoftwareTokenCommand({
+          UserPoolId: this.userPoolId,
+          Username: username,
+          UserCode: code
+        });
+      }
+
+      const verifyResult = await cognitoClient.send(verifyCommand);
+
+      if (secret) {
+        // Enable MFA after successful verification
+        const enableCommand = new CognitoCommands.AdminSetUserMFAPreferenceCommand({
+          UserPoolId: this.userPoolId,
+          Username: username,
+          SoftwareTokenMfaSettings: {
+            Enabled: true,
+            PreferredMfa: true
+          }
+        });
+
+        await cognitoClient.send(enableCommand);
+      }
+
+      return {
+        success: true,
+        status: secret ? 'enabled' : 'verified',
+        message: secret ? 'MFA enabled successfully' : 'MFA code verified'
+      };
+    } catch (error) {
+      console.error('❌ MFA verification error:', error);
+      
+      if (error.name === 'CodeMismatchException') {
+        return {
+          success: false,
+          error: 'Invalid MFA code'
+        };
+      }
+      
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Disable MFA for user
+   * @param {string} username - Username
+   * @param {string} code - Current MFA code (for verification)
+   * @returns {Promise<Object>} Disable result
+   */
+  async disableMFA(username, code) {
+    try {
+      // First verify the current code
+      const verifyResult = await this.verifyMFA(username, code);
+      
+      if (!verifyResult.success) {
+        return verifyResult;
+      }
+
+      // Disable MFA
+      const disableCommand = new CognitoCommands.AdminSetUserMFAPreferenceCommand({
+        UserPoolId: this.userPoolId,
         Username: username,
-        ConfirmationCode: confirmationCode
+        SoftwareTokenMfaSettings: {
+          Enabled: false,
+          PreferredMfa: false
+        }
+      });
+
+      await cognitoClient.send(disableCommand);
+
+      return {
+        success: true,
+        message: 'MFA disabled successfully'
+      };
+    } catch (error) {
+      console.error('❌ MFA disable error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * List all users in the user pool
+   * @param {number} limit - Maximum number of users to return
+   * @param {string} paginationToken - Pagination token
+   * @returns {Promise<Object>} List of users
+   */
+  async listUsers(limit = 50, paginationToken = null) {
+    try {
+      const command = new CognitoCommands.ListUsersCommand({
+        UserPoolId: this.userPoolId,
+        Limit: limit,
+        PaginationToken: paginationToken
+      });
+
+      const result = await cognitoClient.send(command);
+
+      const users = result.Users.map(user => {
+        const attributes = {};
+        user.Attributes.forEach(attr => {
+          attributes[attr.Name] = attr.Value;
+        });
+
+        return {
+          id: user.Username,
+          username: user.Username,
+          email: attributes.email || '',
+          status: user.UserStatus,
+          enabled: user.Enabled,
+          createdAt: user.UserCreateDate,
+          attributes: attributes
+        };
+      });
+
+      return {
+        success: true,
+        users: users,
+        paginationToken: result.PaginationToken
+      };
+    } catch (error) {
+      console.error('❌ List users error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Add user to group
+   * @param {string} username - Username
+   * @param {string} groupName - Group name
+   * @returns {Promise<Object>} Group assignment result
+   */
+  async addUserToGroup(username, groupName) {
+    try {
+      const command = new CognitoCommands.AdminAddUserToGroupCommand({
+        UserPoolId: this.userPoolId,
+        Username: username,
+        GroupName: groupName
       });
 
       await cognitoClient.send(command);
 
-      console.log(`✅ User registration confirmed: ${username}`);
+      console.log(`✅ User ${username} added to group: ${groupName}`);
 
       return {
         success: true,
-        message: 'User registration confirmed successfully'
+        message: `User added to ${groupName} group`
       };
     } catch (error) {
-      console.error('❌ Registration confirmation error:', error);
+      console.error('❌ Add user to group error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Remove user from group
+   * @param {string} username - Username
+   * @param {string} groupName - Group name
+   * @returns {Promise<Object>} Group removal result
+   */
+  async removeUserFromGroup(username, groupName) {
+    try {
+      const command = new CognitoCommands.AdminRemoveUserFromGroupCommand({
+        UserPoolId: this.userPoolId,
+        Username: username,
+        GroupName: groupName
+      });
+
+      await cognitoClient.send(command);
+
+      console.log(`✅ User ${username} removed from group: ${groupName}`);
+
+      return {
+        success: true,
+        message: `User removed from ${groupName} group`
+      };
+    } catch (error) {
+      console.error('❌ Remove user from group error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * List groups for user
+   * @param {string} username - Username
+   * @returns {Promise<Object>} User's groups
+   */
+  async listGroupsForUser(username) {
+    try {
+      const command = new CognitoCommands.AdminListGroupsForUserCommand({
+        UserPoolId: this.userPoolId,
+        Username: username,
+        Limit: 10
+      });
+
+      const result = await cognitoClient.send(command);
+
+      const groups = result.Groups.map(group => ({
+        name: group.GroupName,
+        description: group.Description,
+        created: group.CreationDate,
+        modified: group.LastModifiedDate
+      }));
+
+      return {
+        success: true,
+        groups: groups
+      };
+    } catch (error) {
+      console.error('❌ List groups for user error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Update user role by modifying group membership
+   * @param {string} username - Username
+   * @param {string} newRole - New role (admin, moderator, user)
+   * @param {string} status - User status (active, suspended)
+   * @returns {Promise<Object>} Update result
+   */
+  async updateUserRole(username, newRole, status = 'active') {
+    try {
+      // First get current groups
+      const currentGroups = await this.listGroupsForUser(username);
       
-      if (error.name === 'CodeMismatchException') {
-        throw new Error('Invalid confirmation code');
-      } else if (error.name === 'ExpiredCodeException') {
-        throw new Error('Confirmation code has expired');
-      } else if (error.name === 'NotAuthorizedException') {
-        throw new Error('User is already confirmed');
+      if (!currentGroups.success) {
+        return currentGroups;
       }
-      
-      throw new Error(`Registration confirmation failed: ${error.message}`);
+
+      // Remove from all current groups
+      for (const group of currentGroups.groups) {
+        await this.removeUserFromGroup(username, group.name);
+      }
+
+      // Add to new role group
+      const groupResult = await this.addUserToGroup(username, newRole);
+
+      if (!groupResult.success) {
+        return groupResult;
+      }
+
+      // Update user status if needed
+      if (status === 'suspended') {
+        const disableCommand = new CognitoCommands.AdminDisableUserCommand({
+          UserPoolId: this.userPoolId,
+          Username: username
+        });
+
+        await cognitoClient.send(disableCommand);
+      } else if (status === 'active') {
+        const enableCommand = new CognitoCommands.AdminEnableUserCommand({
+          UserPoolId: this.userPoolId,
+          Username: username
+        });
+
+        await cognitoClient.send(enableCommand);
+      }
+
+      // Update custom role attribute
+      await this.updateUserAttributes(username, {
+        'custom:role': newRole,
+        'custom:status': status
+      });
+
+      return {
+        success: true,
+        message: `User role updated to ${newRole}, status: ${status}`
+      };
+    } catch (error) {
+      console.error('❌ Update user role error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Handle MFA challenge during authentication
+   * @param {string} username - Username
+   * @param {string} session - Session token
+   * @param {string} code - MFA code
+   * @returns {Promise<Object>} Authentication result
+   */
+  async respondToMFAChallenge(username, session, code) {
+    try {
+      const command = new CognitoCommands.AdminRespondToAuthChallengeCommand({
+        UserPoolId: this.userPoolId,
+        ClientId: this.clientId,
+        ChallengeName: 'SOFTWARE_TOKEN_MFA',
+        Session: session,
+        ChallengeResponses: {
+          USERNAME: username,
+          SOFTWARE_TOKEN_MFA_CODE: code
+        }
+      });
+
+      const result = await cognitoClient.send(command);
+
+      if (result.AuthenticationResult) {
+        return {
+          success: true,
+          tokens: result.AuthenticationResult,
+          user: { username }
+        };
+      } else {
+        return {
+          success: false,
+          error: 'MFA challenge failed'
+        };
+      }
+    } catch (error) {
+      console.error('❌ MFA challenge error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 }

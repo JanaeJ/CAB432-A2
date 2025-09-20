@@ -7,7 +7,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .header { text-align: center; margin-bottom: 30px; }
         .header h1 { 
             color: #1a73e8; 
@@ -20,14 +20,21 @@
         .section h2 { color: #333; margin-bottom: 15px; border-bottom: 2px solid #1a73e8; padding-bottom: 10px; }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
         .btn { background: #1a73e8; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px; }
         .btn:hover { background: #1557b0; }
         .btn:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-secondary { background: #6c757d; }
+        .btn-secondary:hover { background: #5a6268; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #218838; }
         .status { padding: 15px; border-radius: 5px; margin: 15px 0; }
         .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
         .file-upload { border: 2px dashed #1a73e8; padding: 40px; text-align: center; border-radius: 8px; cursor: pointer; }
         .file-upload:hover { background: #f8f9fa; }
         .file-upload input { display: none; }
@@ -83,41 +90,6 @@
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Responsive tab navigation */
-        @media (max-width: 768px) {
-            .tab-navigation { 
-                flex-direction: column; 
-                padding: 10px;
-            }
-            .tab-btn { 
-                margin: 2px 0; 
-                min-width: auto;
-                text-align: center;
-            }
-        }
-        
-        /* Tab content spacing */
-        .tab-content .section:first-child {
-            margin-top: 0;
-        }
-        
-        /* Active tab indicator */
-        .tab-btn.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 20px;
-            height: 3px;
-            background: #1a73e8;
-            border-radius: 2px;
-        }
-        
-        .tab-btn {
-            position: relative;
         }
         
         /* Speed options styling */
@@ -189,6 +161,80 @@
             font-weight: bold;
             color: #1a73e8;
         }
+        
+        /* Table Styles */
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; font-weight: bold; }
+        tr:hover { background-color: #f5f5f5; }
+        
+        /* Modal Styles */
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.7); 
+            z-index: 1000; 
+            overflow-y: auto;
+        }
+        .modal-content { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            background: white; 
+            padding: 30px; 
+            border-radius: 10px; 
+            max-width: 500px; 
+            width: 90%; 
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .close { 
+            position: absolute; 
+            top: 15px; 
+            right: 15px; 
+            font-size: 24px; 
+            cursor: pointer; 
+            color: #aaa; 
+        }
+        .close:hover { color: #000; }
+        
+        /* MFA QR Code */
+        .qrcode-container { 
+            text-align: center; 
+            margin: 20px 0; 
+            padding: 15px; 
+            background: #f8f9fa; 
+            border-radius: 8px; 
+        }
+        .qrcode { 
+            max-width: 200px; 
+            margin: 0 auto; 
+        }
+        
+        /* Role badges */
+        .role-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .role-admin { background: #dc3545; color: white; }
+        .role-user { background: #28a745; color: white; }
+        .role-moderator { background: #ffc107; color: black; }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .tab-navigation { flex-direction: column; padding: 10px; }
+            .tab-btn { margin: 2px 0; min-width: auto; text-align: center; }
+            .modal-content { width: 95%; padding: 20px; }
+        }
     </style>
 </head>
 <body>
@@ -198,18 +244,47 @@
             <p>Professional Media Processing & Conversion Tool</p>
         </div>
 
+        <!-- Register Section -->
+        <div class="section" id="registerSection">
+            <h2>📝 Register</h2>
+            <div class="form-group">
+                <label for="regUsername">Username:</label>
+                <input type="text" id="regUsername" placeholder="Enter username">
+            </div>
+            <div class="form-group">
+                <label for="regEmail">Email:</label>
+                <input type="email" id="regEmail" placeholder="Enter email">
+            </div>
+            <div class="form-group">
+                <label for="regPassword">Password:</label>
+                <input type="password" id="regPassword" placeholder="Enter password">
+            </div>
+            <div class="form-group">
+                <label for="regConfirmPassword">Confirm Password:</label>
+                <input type="password" id="regConfirmPassword" placeholder="Confirm password">
+            </div>
+            <button class="btn" onclick="register()">Register</button>
+            <div id="registerStatus"></div>
+        </div>
+
         <!-- Login Section -->
         <div class="section" id="loginSection">
             <h2>🔐 Login</h2>
             <div class="form-group">
                 <label for="username">Username:</label>
-                <input type="text" id="username" placeholder="admin or user">
+                <input type="text" id="username" placeholder="Enter username">
             </div>
             <div class="form-group">
                 <label for="password">Password:</label>
-                <input type="password" id="password" placeholder="admin123 or user123">
+                <input type="password" id="password" placeholder="Enter password">
             </div>
-            <button class="btn" onclick="login()">Login</button>
+            <div id="mfaSection" style="display: none;">
+                <div class="form-group">
+                    <label for="mfaCode">MFA Code:</label>
+                    <input type="text" id="mfaCode" placeholder="Enter 6-digit code">
+                </div>
+            </div>
+            <button class="btn" onclick="login()" id="loginBtn">Login</button>
             <div id="loginStatus"></div>
         </div>
 
@@ -221,9 +296,12 @@
                 <button class="tab-btn" onclick="showTab('files')">📊 My Files</button>
                 <button class="tab-btn" onclick="showTab('jobs')">✅ Conversion Jobs</button>
                 <button class="tab-btn" onclick="showTab('processed')">🎬 Converted Files</button>
+                <button class="tab-btn" onclick="showTab('profile')">👤 Profile</button>
+                <button class="tab-btn" onclick="showTab('users')" id="usersTabBtn" style="display: none;">👥 User Management</button>
+                <button class="tab-btn" onclick="showTab('roles')" id="rolesTabBtn" style="display: none;">🔐 Role Management</button>
             </div>
 
-                        <!-- Convert & Process Tab -->
+            <!-- Convert & Process Tab -->
             <div id="uploadTab" class="tab-content active">
                 <div class="section">
                     <h2>📁 Upload Files</h2>
@@ -298,16 +376,120 @@
                 </div>
             </div>
 
-            <div class="section">
-                <h2>🚪 Logout</h2>
-                <button class="btn" onclick="logout()">Logout</button>
+            <!-- Profile Tab -->
+            <div id="profileTab" class="tab-content">
+                <div class="section">
+                    <h2>👤 User Profile</h2>
+                    <div class="form-group">
+                        <label for="profileUsername">Username:</label>
+                        <input type="text" id="profileUsername" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="profileEmail">Email:</label>
+                        <input type="email" id="profileEmail">
+                    </div>
+                    <div class="form-group">
+                        <label for="profileFirstName">First Name:</label>
+                        <input type="text" id="profileFirstName">
+                    </div>
+                    <div class="form-group">
+                        <label for="profileLastName">Last Name:</label>
+                        <input type="text" id="profileLastName">
+                    </div>
+                    <button class="btn" onclick="updateProfile()">Update Profile</button>
+                    <div id="profileStatus"></div>
+                </div>
+
+                <div class="section">
+                    <h2>🔐 Multi-Factor Authentication</h2>
+                    <div id="mfaStatus">
+                        <p>MFA Status: <span id="mfaStatusText">Checking...</span></p>
+                    </div>
+                    <div id="mfaEnableSection" style="display: none;">
+                        <div class="qrcode-container">
+                            <p>Scan this QR code with your authenticator app:</p>
+                            <img id="mfaQrCode" class="qrcode" src="" alt="MFA QR Code">
+                            <p>Or enter this secret key manually: <code id="mfaSecret"></code></p>
+                        </div>
+                        <div class="form-group">
+                            <label for="enableMfaCode">Verification Code:</label>
+                            <input type="text" id="enableMfaCode" placeholder="Enter 6-digit code">
+                        </div>
+                        <button class="btn btn-success" onclick="enableMfa()">Enable MFA</button>
+                        <button class="btn btn-secondary" onclick="cancelEnableMfa()">Cancel</button>
+                    </div>
+                    <div id="mfaDisableSection" style="display: none;">
+                        <div class="form-group">
+                            <label for="disableMfaCode">Verification Code:</label>
+                            <input type="text" id="disableMfaCode" placeholder="Enter 6-digit code">
+                        </div>
+                        <button class="btn btn-danger" onclick="disableMfa()">Disable MFA</button>
+                    </div>
+                    <div id="mfaActionSection" style="display: none;">
+                        <button class="btn" onclick="setupMfa()">Set Up MFA</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🚪 Session Management</h2>
+                    <button class="btn btn-danger" onclick="logout()">Logout</button>
+                </div>
+            </div>
+
+            <!-- User Management Tab (Admin only) -->
+            <div id="usersTab" class="tab-content">
+                <div class="section">
+                    <h2>👥 User Management</h2>
+                    <button class="btn" onclick="loadUsers()">Refresh Users</button>
+                    <div id="usersList">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <!-- Users will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Role Management Tab (Admin only) -->
+            <div id="rolesTab" class="tab-content">
+                <div class="section">
+                    <h2>🔐 Role Management</h2>
+                    <button class="btn" onclick="loadRoles()">Refresh Roles</button>
+                    <button class="btn btn-success" onclick="showCreateRoleModal()">Create New Role</button>
+                    <div id="rolesList">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Role Name</th>
+                                    <th>Permissions</th>
+                                    <th>Users</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rolesTableBody">
+                                <!-- Roles will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Crop Options Modal -->
-    <div id="cropModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000;">
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%;">
+    <div id="cropModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCropModal()">&times;</span>
             <h2 id="cropModalTitle">🎬 Process File: <span id="cropFileName"></span></h2>
             <div class="form-group">
                 <label for="cropWidth">Width (pixels):</label>
@@ -341,15 +523,676 @@
             </div>
             <div style="text-align: center; margin-top: 20px;">
                 <button class="btn" onclick="performProcessing()" id="cropButton">🎬 Process File</button>
-                <button class="btn" onclick="closeCropModal()" style="background: #6c757d;">Cancel</button>
+                <button class="btn btn-secondary" onclick="closeCropModal()">Cancel</button>
             </div>
             <div id="cropStatus" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <!-- Create Role Modal -->
+    <div id="createRoleModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('createRoleModal')">&times;</span>
+            <h2>Create New Role</h2>
+            <div class="form-group">
+                <label for="newRoleName">Role Name:</label>
+                <input type="text" id="newRoleName" placeholder="Enter role name">
+            </div>
+            <div class="form-group">
+                <label for="newRoleDescription">Description:</label>
+                <textarea id="newRoleDescription" placeholder="Enter role description"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Permissions:</label>
+                <div>
+                    <input type="checkbox" id="permUpload" value="upload">
+                    <label for="permUpload">Upload Files</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="permProcess" value="process">
+                    <label for="permProcess">Process Files</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="permDelete" value="delete">
+                    <label for="permDelete">Delete Files</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="permUserManagement" value="user_management">
+                    <label for="permUserManagement">User Management</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="permRoleManagement" value="role_management">
+                    <label for="permRoleManagement">Role Management</label>
+                </div>
+            </div>
+            <button class="btn btn-success" onclick="createRole()">Create Role</button>
+            <div id="createRoleStatus"></div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editUserModal')">&times;</span>
+            <h2>Edit User</h2>
+            <input type="hidden" id="editUserId">
+            <div class="form-group">
+                <label for="editUserUsername">Username:</label>
+                <input type="text" id="editUserUsername" disabled>
+            </div>
+            <div class="form-group">
+                <label for="editUserEmail">Email:</label>
+                <input type="email" id="editUserEmail">
+            </div>
+            <div class="form-group">
+                <label for="editUserRole">Role:</label>
+                <select id="editUserRole">
+                    <!-- Roles will be populated here -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="editUserStatus">Status:</label>
+                <select id="editUserStatus">
+                    <option value="active">Active</option>
+                    <option value="suspended">Suspended</option>
+                    <option value="pending">Pending</option>
+                </select>
+            </div>
+            <button class="btn" onclick="updateUser()">Update User</button>
+            <div id="editUserStatus"></div>
         </div>
     </div>
 
     <script>
         let authToken = null;
         let selectedFile = null;
+        let currentUser = null;
+        let mfaSetupData = null;
+        let currentCropFileId = null;
+        let currentCropFileType = null;
+
+        // Check if user is logged in on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedToken = localStorage.getItem('authToken');
+            if (savedToken) {
+                authToken = savedToken;
+                // Verify token is still valid
+                verifyToken();
+            }
+            
+            // Set up quality slider
+            const qualitySlider = document.getElementById('cropQuality');
+            const qualityValue = document.getElementById('cropQualityValue');
+            if (qualitySlider && qualityValue) {
+                qualitySlider.addEventListener('input', function() {
+                    qualityValue.textContent = this.value + '%';
+                });
+            }
+        });
+
+        // Verify token validity
+        async function verifyToken() {
+            try {
+                const response = await fetch('/api/auth/verify', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser = data.user;
+                    showMainInterface();
+                } else {
+                    localStorage.removeItem('authToken');
+                    authToken = null;
+                }
+            } catch (error) {
+                console.error('Token verification failed:', error);
+                localStorage.removeItem('authToken');
+                authToken = null;
+            }
+        }
+
+        // Show main interface after login
+        function showMainInterface() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('registerSection').style.display = 'none';
+            document.getElementById('mainSection').style.display = 'block';
+            
+            // Load user profile
+            loadUserProfile();
+            
+            // Check if user is admin and show admin tabs
+            if (currentUser && currentUser.role === 'admin') {
+                document.getElementById('usersTabBtn').style.display = 'block';
+                document.getElementById('rolesTabBtn').style.display = 'block';
+            }
+            
+            // Load initial data
+            loadFiles();
+        }
+
+        // Register function
+        async function register() {
+            const username = document.getElementById('regUsername').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+
+            if (!username || !email || !password || !confirmPassword) {
+                showStatus('registerStatus', 'Please fill in all fields', 'error');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showStatus('registerStatus', 'Passwords do not match', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('registerStatus', 'Registration successful! Please check your email for verification.', 'success');
+                    // Clear form
+                    document.getElementById('regUsername').value = '';
+                    document.getElementById('regEmail').value = '';
+                    document.getElementById('regPassword').value = '';
+                    document.getElementById('regConfirmPassword').value = '';
+                } else {
+                    showStatus('registerStatus', data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('registerStatus', 'Registration failed: ' + error.message, 'error');
+            }
+        }
+
+        // Login function
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const mfaCode = document.getElementById('mfaCode').value;
+
+            if (!username || !password) {
+                showStatus('loginStatus', 'Please enter username and password', 'error');
+                return;
+            }
+
+            try {
+                const loginData = { username, password };
+                if (mfaCode) {
+                    loginData.mfaCode = mfaCode;
+                }
+
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(loginData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.mfaRequired && !mfaCode) {
+                        // Show MFA input field
+                        document.getElementById('mfaSection').style.display = 'block';
+                        document.getElementById('loginBtn').textContent = 'Verify MFA';
+                        showStatus('loginStatus', 'Please enter your MFA code', 'info');
+                        return;
+                    }
+
+                    authToken = data.token;
+                    currentUser = data.user;
+                    
+                    // Save token to localStorage
+                    localStorage.setItem('authToken', authToken);
+                    
+                    showStatus('loginStatus', `Welcome ${username}!`, 'success');
+                    showMainInterface();
+                } else {
+                    showStatus('loginStatus', data.error, 'error');
+                    // Reset MFA section if login fails
+                    document.getElementById('mfaSection').style.display = 'none';
+                    document.getElementById('loginBtn').textContent = 'Login';
+                }
+            } catch (error) {
+                showStatus('loginStatus', 'Login failed: ' + error.message, 'error');
+            }
+        }
+
+        // Load user profile
+        async function loadUserProfile() {
+            try {
+                const response = await fetch('/api/users/profile', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Populate profile form
+                    document.getElementById('profileUsername').value = data.username;
+                    document.getElementById('profileEmail').value = data.email;
+                    document.getElementById('profileFirstName').value = data.firstName || '';
+                    document.getElementById('profileLastName').value = data.lastName || '';
+                    
+                    // Check MFA status
+                    checkMfaStatus();
+                }
+            } catch (error) {
+                console.error('Failed to load user profile:', error);
+            }
+        }
+
+        // Update user profile
+        async function updateProfile() {
+            const email = document.getElementById('profileEmail').value;
+            const firstName = document.getElementById('profileFirstName').value;
+            const lastName = document.getElementById('profileLastName').value;
+
+            try {
+                const response = await fetch('/api/users/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, firstName, lastName })
+                });
+
+                if (response.ok) {
+                    showStatus('profileStatus', 'Profile updated successfully', 'success');
+                } else {
+                    const data = await response.json();
+                    showStatus('profileStatus', data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('profileStatus', 'Profile update failed: ' + error.message, 'error');
+            }
+        }
+
+        // Check MFA status
+        async function checkMfaStatus() {
+            try {
+                const response = await fetch('/api/auth/mfa-status', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const statusText = document.getElementById('mfaStatusText');
+                    const enableSection = document.getElementById('mfaEnableSection');
+                    const disableSection = document.getElementById('mfaDisableSection');
+                    const actionSection = document.getElementById('mfaActionSection');
+                    
+                    if (data.enabled) {
+                        statusText.textContent = 'Enabled';
+                        statusText.style.color = 'green';
+                        disableSection.style.display = 'block';
+                        enableSection.style.display = 'none';
+                        actionSection.style.display = 'none';
+                    } else {
+                        statusText.textContent = 'Disabled';
+                        statusText.style.color = 'red';
+                        disableSection.style.display = 'none';
+                        
+                        if (data.setupData) {
+                            // Show setup UI with QR code
+                            mfaSetupData = data.setupData;
+                            document.getElementById('mfaQrCode').src = data.setupData.qrCode;
+                            document.getElementById('mfaSecret').textContent = data.setupData.secret;
+                            enableSection.style.display = 'block';
+                            actionSection.style.display = 'none';
+                        } else {
+                            enableSection.style.display = 'none';
+                            actionSection.style.display = 'block';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to check MFA status:', error);
+            }
+        }
+
+        // Setup MFA
+        async function setupMfa() {
+            try {
+                const response = await fetch('/api/auth/enable-mfa', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    mfaSetupData = data;
+                    
+                    // Show QR code and verification input
+                    document.getElementById('mfaQrCode').src = data.qrCode;
+                    document.getElementById('mfaSecret').textContent = data.secret;
+                    document.getElementById('mfaEnableSection').style.display = 'block';
+                    document.getElementById('mfaActionSection').style.display = 'none';
+                } else {
+                    const data = await response.json();
+                    showStatus('mfaStatus', data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('mfaStatus', 'MFA setup failed: ' + error.message, 'error');
+            }
+        }
+
+        // Enable MFA
+        async function enableMfa() {
+            const code = document.getElementById('enableMfaCode').value;
+            
+            if (!code || code.length !== 6) {
+                showStatus('mfaStatus', 'Please enter a valid 6-digit code', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/verify-mfa', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ code, secret: mfaSetupData.secret })
+                });
+
+                if (response.ok) {
+                    showStatus('mfaStatus', 'MFA enabled successfully', 'success');
+                    checkMfaStatus();
+                } else {
+                    const data = await response.json();
+                    showStatus('mfaStatus', data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('mfaStatus', 'MFA enable failed: ' + error.message, 'error');
+            }
+        }
+
+        // Disable MFA
+        async function disableMfa() {
+            const code = document.getElementById('disableMfaCode').value;
+            
+            if (!code || code.length !== 6) {
+                showStatus('mfaStatus', 'Please enter a valid 6-digit code', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/disable-mfa', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ code })
+                });
+
+                if (response.ok) {
+                    showStatus('mfaStatus', 'MFA disabled successfully', 'success');
+                    checkMfaStatus();
+                } else {
+                    const data = await response.json();
+                    showStatus('mfaStatus', data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('mfaStatus', 'MFA disable failed: ' + error.message, 'error');
+            }
+        }
+
+        // Cancel MFA setup
+        function cancelEnableMfa() {
+            document.getElementById('mfaEnableSection').style.display = 'none';
+            document.getElementById('mfaActionSection').style.display = 'block';
+            document.getElementById('enableMfaCode').value = '';
+        }
+
+        // Load users (admin only)
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/users', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const tableBody = document.getElementById('usersTableBody');
+                    tableBody.innerHTML = '';
+                    
+                    data.users.forEach(user => {
+                        const row = document.createElement('tr');
+                        
+                        // Create role badge
+                        let roleBadge = '';
+                        if (user.role === 'admin') {
+                            roleBadge = '<span class="role-badge role-admin">Admin</span>';
+                        } else if (user.role === 'moderator') {
+                            roleBadge = '<span class="role-badge role-moderator">Moderator</span>';
+                        } else {
+                            roleBadge = '<span class="role-badge role-user">User</span>';
+                        }
+                        
+                        row.innerHTML = `
+                            <td>${user.username}</td>
+                            <td>${user.email}</td>
+                            <td>${roleBadge}</td>
+                            <td>${user.status}</td>
+                            <td>
+                                <button class="btn" onclick="editUser('${user.id}', '${user.username}', '${user.email}', '${user.role}', '${user.status}')">Edit</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load users:', error);
+            }
+        }
+
+        // Load roles (admin only)
+        async function loadRoles() {
+            try {
+                const response = await fetch('/api/roles', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const tableBody = document.getElementById('rolesTableBody');
+                    tableBody.innerHTML = '';
+                    
+                    // Also populate role dropdown in edit user modal
+                    const roleDropdown = document.getElementById('editUserRole');
+                    roleDropdown.innerHTML = '';
+                    
+                    data.roles.forEach(role => {
+                        // Add to roles table
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${role.name}</td>
+                            <td>${role.permissions.join(', ')}</td>
+                            <td>${role.userCount}</td>
+                            <td>
+                                <button class="btn btn-danger" onclick="deleteRole('${role.id}')">Delete</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                        
+                        // Add to role dropdown
+                        const option = document.createElement('option');
+                        option.value = role.id;
+                        option.textContent = role.name;
+                        roleDropdown.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load roles:', error);
+            }
+        }
+
+        // Edit user
+        function editUser(id, username, email, role, status) {
+            document.getElementById('editUserId').value = id;
+            document.getElementById('editUserUsername').value = username;
+            document.getElementById('editUserEmail').value = email;
+            document.getElementById('editUserRole').value = role;
+            document.getElementById('editUserStatus').value = status;
+            
+            showModal('editUserModal');
+        }
+
+        // Update user
+        async function updateUser() {
+            const id = document.getElementById('editUserId').value;
+            const email = document.getElementById('editUserEmail').value;
+            const role = document.getElementById('editUserRole').value;
+            const status = document.getElementById('editUserStatus').value;
+
+            try {
+                const response = await fetch(`/api/users/${id}/role`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, role, status })
+                });
+
+                if (response.ok) {
+                    showStatus('editUserStatus', 'User updated successfully', 'success');
+                    closeModal('editUserModal');
+                    loadUsers();
+                } else {
+                    const data = await response.json();
+                    showStatus('editUserStatus', data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('editUserStatus', 'User update failed: ' + error.message, 'error');
+            }
+        }
+
+        // Create role
+        async function createRole() {
+            const name = document.getElementById('newRoleName').value;
+            const description = document.getElementById('newRoleDescription').value;
+            
+            // Get selected permissions
+            const permissions = [];
+            if (document.getElementById('permUpload').checked) permissions.push('upload');
+            if (document.getElementById('permProcess').checked) permissions.push('process');
+            if (document.getElementById('permDelete').checked) permissions.push('delete');
+            if (document.getElementById('permUserManagement').checked) permissions.push('user_management');
+            if (document.getElementById('permRoleManagement').checked) permissions.push('role_management');
+
+            if (!name) {
+                showStatus('createRoleStatus', 'Please enter a role name', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/roles', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, description, permissions })
+                });
+
+                if (response.ok) {
+                    showStatus('createRoleStatus', 'Role created successfully', 'success');
+                    closeModal('createRoleModal');
+                    loadRoles();
+                    
+                    // Clear form
+                    document.getElementById('newRoleName').value = '';
+                    document.getElementById('newRoleDescription').value = '';
+                    document.getElementById('permUpload').checked = false;
+                    document.getElementById('permProcess').checked = false;
+                    document.getElementById('permDelete').checked = false;
+                    document.getElementById('permUserManagement').checked = false;
+                    document.getElementById('permRoleManagement').checked = false;
+                } else {
+                    const data = await response.json();
+                    showStatus('createRoleStatus', data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('createRoleStatus', 'Role creation failed: ' + error.message, 'error');
+            }
+        }
+
+        // Delete role
+        async function deleteRole(roleId) {
+            if (!confirm('Are you sure you want to delete this role? Users with this role will be assigned the default user role.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/roles/${roleId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    showStatus('rolesList', 'Role deleted successfully', 'success');
+                    loadRoles();
+                } else {
+                    const data = await response.json();
+                    showStatus('rolesList', data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('rolesList', 'Role deletion failed: ' + error.message, 'error');
+            }
+        }
+
+        // Show modal
+        function showModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        // Close modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Show create role modal
+        function showCreateRoleModal() {
+            showModal('createRoleModal');
+        }
+
+        // Logout
+        function logout() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('authToken');
+            
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('registerSection').style.display = 'block';
+            document.getElementById('mainSection').style.display = 'none';
+            
+            // Reset login form
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('mfaCode').value = '';
+            document.getElementById('mfaSection').style.display = 'none';
+            document.getElementById('loginBtn').textContent = 'Login';
+            
+            showStatus('loginStatus', 'Logged out successfully', 'info');
+        }
+
+        // Show status
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+            setTimeout(() => element.innerHTML = '', 5000);
+        }
 
         // Tab management
         function showTab(tabName) {
@@ -382,63 +1225,26 @@
                 case 'processed':
                     loadProcessedFiles();
                     break;
+                case 'users':
+                    loadUsers();
+                    break;
+                case 'roles':
+                    loadRoles();
+                    break;
             }
         }
 
-        // Toggle speed options visibility
-        function toggleSpeedOptions() {
-            const processType = document.getElementById('processType').value;
-            const speedOptions = document.getElementById('speedOptions');
-            
-            if (processType === 'speed-change') {
-                speedOptions.style.display = 'block';
-            } else {
-                speedOptions.style.display = 'none';
-            }
-        }
-
-        // Login
-        async function login() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
-            if (!username || !password) {
-                showStatus('loginStatus', 'Please enter username and password', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    authToken = data.token;
-                    showStatus('loginStatus', `Welcome ${username}!`, 'success');
-                    document.getElementById('loginSection').style.display = 'none';
-                    document.getElementById('mainSection').style.display = 'block';
-                    
-                    // Load initial data for the active tab (upload tab)
-                    loadFiles(); // Load files for the file selector
-                } else {
-                    showStatus('loginStatus', data.error, 'error');
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modals = document.getElementsByClassName('modal');
+            for (let i = 0; i < modals.length; i++) {
+                if (event.target == modals[i]) {
+                    modals[i].style.display = 'none';
                 }
-            } catch (error) {
-                showStatus('loginStatus', 'Login failed: ' + error.message, 'error');
             }
         }
 
-        // Logout
-        function logout() {
-            authToken = null;
-            document.getElementById('loginSection').style.display = 'block';
-            document.getElementById('mainSection').style.display = 'none';
-            showStatus('loginStatus', 'Logged out', 'info');
-        }
+        // ============ FILE HANDLING FUNCTIONS ============
 
         // Select file
         function handleFileSelect() {
@@ -596,11 +1402,11 @@
                                 </div>
                                 <div style="text-align: right;">
                                     ${canCrop ? `
-                                        <button class="btn" onclick="showCropOptions(${file.id}, '${file.original_filename}', '${file.file_type}')" style="margin-bottom: 5px;">
+                                        <button class="btn" onclick="showCropOptions('${file.id}', '${file.original_filename}', '${file.file_type}')" style="margin-bottom: 5px;">
                                             ✂️ ${isImage ? 'Crop Image' : 'Crop Video'}
                                         </button>
                                     ` : ''}
-                                    <button class="btn" onclick="deleteFile(${file.id})" style="background: #dc3545;">
+                                    <button class="btn btn-danger" onclick="deleteFile('${file.id}')">
                                         🗑️ Delete
                                     </button>
                                 </div>
@@ -692,10 +1498,10 @@
                                     </div>
                                 </div>
                                 <div style="text-align: right; margin-left: 20px;">
-                                    <button class="btn" onclick="downloadFile('${file.file_path}', '${file.original_filename}')" style="background: #28a745; margin-bottom: 5px;">
+                                    <button class="btn btn-success" onclick="downloadFile('${file.file_path}', '${file.original_filename}')" style="margin-bottom: 5px;">
                                         ⬇️ Download
                                     </button>
-                                    <button class="btn" onclick="deleteProcessedFile(${file.id})" style="background: #dc3545;">
+                                    <button class="btn btn-danger" onclick="deleteProcessedFile('${file.id}')">
                                         🗑️ Delete
                                     </button>
                                 </div>
@@ -774,12 +1580,9 @@
         }
 
         // Crop functionality
-        let currentCropFileId = null;
-        let currentCropFileType = null;
-
         function showCropOptions(fileId, fileName, fileType) {
             currentCropFileId = fileId;
-            currentCropFileType = fileType; // Store file type for later use
+            currentCropFileType = fileType;
             document.getElementById('cropFileName').textContent = fileName;
             document.getElementById('cropModal').style.display = 'block';
             
@@ -798,7 +1601,7 @@
             document.getElementById('cropHeight').value = '';
             document.getElementById('cropX').value = '0';
             document.getElementById('cropY').value = '0';
-            document.getElementById('cropFormat').value = 'crop'; // Default to crop for both image and video
+            document.getElementById('cropFormat').value = 'crop';
             document.getElementById('cropQuality').value = '80';
             document.getElementById('cropQualityValue').textContent = '80%';
             document.getElementById('cropStatus').innerHTML = '';
@@ -808,17 +1611,6 @@
             document.getElementById('cropModal').style.display = 'none';
             currentCropFileId = null;
         }
-
-        // Update quality display
-        document.addEventListener('DOMContentLoaded', function() {
-            const qualitySlider = document.getElementById('cropQuality');
-            const qualityValue = document.getElementById('cropQualityValue');
-            if (qualitySlider && qualityValue) {
-                qualitySlider.addEventListener('input', function() {
-                    qualityValue.textContent = this.value + '%';
-                });
-            }
-        });
 
         async function performProcessing() {
             if (!currentCropFileId) {
@@ -859,7 +1651,7 @@
                     endpoint = `/api/media/process-video/${currentCropFileId}`;
                     requestData = { 
                         processType: 'speed-change',
-                        speedMultiplier: 1.5 // Default speed
+                        speedMultiplier: 1.5
                     };
                 } else if (processType === 'filter') {
                     endpoint = `/api/media/process-audio/${currentCropFileId}`;
@@ -882,7 +1674,7 @@
                         height,
                         x,
                         y,
-                        format: 'jpeg', // Default format for crop
+                        format: 'jpeg',
                         quality
                     };
                 }
@@ -916,7 +1708,7 @@
                     showStatus('cropStatus', successMessage, 'success');
                     setTimeout(() => {
                         closeCropModal();
-                        loadFiles(); // Refresh file list
+                        loadFiles();
                     }, 2000);
                 } else {
                     showStatus('cropStatus', data.error || 'Processing failed', 'error');
@@ -940,7 +1732,7 @@
 
                 if (response.ok) {
                     showStatus('filesList', 'File deleted successfully', 'success');
-                    loadFiles(); // Refresh file list
+                    loadFiles();
                 } else {
                     const data = await response.json();
                     showStatus('filesList', data.error || 'Delete failed', 'error');
@@ -990,7 +1782,7 @@
 
                 if (response.ok) {
                     showStatus('processedFilesList', 'Processed file deleted successfully', 'success');
-                    loadProcessedFiles(); // Refresh processed files list
+                    loadProcessedFiles();
                 } else {
                     const data = await response.json();
                     showStatus('processedFilesList', data.error || 'Delete failed', 'error');
@@ -1000,11 +1792,16 @@
             }
         }
 
-        // Show status
-        function showStatus(elementId, message, type) {
-            const element = document.getElementById(elementId);
-            element.innerHTML = `<div class="status ${type}">${message}</div>`;
-            setTimeout(() => element.innerHTML = '', 5000);
+        // Toggle speed options visibility
+        function toggleSpeedOptions() {
+            const processType = document.getElementById('processType').value;
+            const speedOptions = document.getElementById('speedOptions');
+            
+            if (processType === 'speed-change') {
+                speedOptions.style.display = 'block';
+            } else {
+                speedOptions.style.display = 'none';
+            }
         }
     </script>
 </body>
