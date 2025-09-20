@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+README.md
+.env
+.nyc_output
+coverage
+.DS_Store
+*.log
+uploads/*
+processed/*
+database/*.db
+postman_collection.json
+POSTMAN_TESTING_GUIDE.md
+Dockerfile
+.dockerignore

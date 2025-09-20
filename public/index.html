@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convertool - Media Processing Tool</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { 
+            color: #1a73e8; 
+            margin-bottom: 10px; 
+            font-size: 2.5em;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section { margin-bottom: 30px; padding: 20px; border: 1px solid #e1e5e9; border-radius: 8px; }
+        .section h2 { color: #333; margin-bottom: 15px; border-bottom: 2px solid #1a73e8; padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .btn { background: #1a73e8; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px; }
+        .btn:hover { background: #1557b0; }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+        .status { padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .file-upload { border: 2px dashed #1a73e8; padding: 40px; text-align: center; border-radius: 8px; cursor: pointer; }
+        .file-upload:hover { background: #f8f9fa; }
+        .file-upload input { display: none; }
+        .results { background: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 15px; }
+        .results pre { background: white; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .job-card { border: 1px solid #17a2b8; padding: 15px; margin: 10px 0; border-radius: 5px; background: #f8f9fa; transition: all 0.3s ease; }
+        .job-card:hover { box-shadow: 0 2px 8px rgba(23, 162, 184, 0.2); transform: translateY(-1px); }
+        .job-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .job-id { color: #17a2b8; font-weight: bold; }
+        .job-status { background: #28a745; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; }
+        .job-info { line-height: 1.6; }
+        .job-note { color: #6c757d; font-size: 0.9em; font-style: italic; margin-top: 10px; padding-top: 10px; border-top: 1px solid #dee2e6; }
+        
+        /* Tab Navigation Styles */
+        .tab-navigation { 
+            display: flex; 
+            background: #f8f9fa; 
+            border-radius: 8px; 
+            padding: 5px; 
+            margin-bottom: 20px; 
+            border: 1px solid #e1e5e9;
+            overflow-x: auto;
+        }
+        .tab-btn { 
+            background: transparent; 
+            border: none; 
+            padding: 12px 20px; 
+            margin: 0 2px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: 500;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            min-width: 120px;
+        }
+        .tab-btn:hover { 
+            background: #e9ecef; 
+            color: #495057;
+        }
+        .tab-btn.active { 
+            background: #1a73e8; 
+            color: white; 
+            box-shadow: 0 2px 4px rgba(26, 115, 232, 0.3);
+        }
+        .tab-content { 
+            display: none; 
+            animation: fadeIn 0.3s ease;
+        }
+        .tab-content.active { 
+            display: block; 
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Responsive tab navigation */
+        @media (max-width: 768px) {
+            .tab-navigation { 
+                flex-direction: column; 
+                padding: 10px;
+            }
+            .tab-btn { 
+                margin: 2px 0; 
+                min-width: auto;
+                text-align: center;
+            }
+        }
+        
+        /* Tab content spacing */
+        .tab-content .section:first-child {
+            margin-top: 0;
+        }
+        
+        /* Active tab indicator */
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 3px;
+            background: #1a73e8;
+            border-radius: 2px;
+        }
+        
+        .tab-btn {
+            position: relative;
+        }
+        
+        /* Speed options styling */
+        #speedOptions {
+            background: #f8f9fa;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            animation: slideDown 0.3s ease;
+        }
+        
+        #speedOptions label {
+            color: #495057;
+            font-weight: 600;
+        }
+        
+        #speedMultiplier {
+            border: 2px solid #1a73e8;
+            background: white;
+        }
+        
+        @keyframes slideDown {
+            from { 
+                opacity: 0; 
+                transform: translateY(-10px); 
+                max-height: 0;
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+                max-height: 100px;
+            }
+        }
+        
+        /* Crop modal styling */
+        #cropModal {
+            backdrop-filter: blur(5px);
+        }
+        
+        #cropModal > div {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 1px solid #e1e5e9;
+        }
+        
+        #cropModal h2 {
+            color: #1a73e8;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        #cropModal .form-group {
+            margin-bottom: 20px;
+        }
+        
+        #cropModal input[type="range"] {
+            width: 100%;
+            margin-top: 5px;
+        }
+        
+        #cropModal .btn {
+            margin: 0 10px;
+            min-width: 120px;
+        }
+        
+        #cropQualityValue {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: bold;
+            color: #1a73e8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛠️ Convertool</h1>
+            <p>Professional Media Processing & Conversion Tool</p>
+        </div>
+
+        <!-- Login Section -->
+        <div class="section" id="loginSection">
+            <h2>🔐 Login</h2>
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" placeholder="admin or user">
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" placeholder="admin123 or user123">
+            </div>
+            <button class="btn" onclick="login()">Login</button>
+            <div id="loginStatus"></div>
+        </div>
+
+        <!-- Main Functionality Section -->
+        <div id="mainSection" style="display: none;">
+            <!-- Tab Navigation -->
+            <div class="tab-navigation">
+                <button class="tab-btn active" onclick="showTab('upload')">📁 Convert & Process</button>
+                <button class="tab-btn" onclick="showTab('files')">📊 My Files</button>
+                <button class="tab-btn" onclick="showTab('jobs')">✅ Conversion Jobs</button>
+                <button class="tab-btn" onclick="showTab('processed')">🎬 Converted Files</button>
+            </div>
+
+                        <!-- Convert & Process Tab -->
+            <div id="uploadTab" class="tab-content active">
+                <div class="section">
+                    <h2>📁 Upload Files</h2>
+                    <div class="file-upload" onclick="document.getElementById('fileInput').click()">
+                        <input type="file" id="fileInput" accept="video/*,audio/*,image/*" onchange="handleFileSelect()">
+                        <h3>Click to Select File</h3>
+                        <p>Supported: MP4, AVI, MOV, MKV, MP3, WAV, FLAC, AAC, JPG, PNG, GIF</p>
+                        <p style="color: #666; font-size: 0.9em;">Maximum file size: 500MB</p>
+                    </div>
+                    <div id="fileInfo" style="display: none; margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 5px;"></div>
+                    <button class="btn" onclick="uploadFile()" id="uploadBtn" disabled>Upload File</button>
+                    <div id="uploadStatus"></div>
+                </div>
+
+                <div class="section">
+                    <h2>⚙️ Convert & Process</h2>
+                    <div class="form-group">
+                        <label for="fileSelect">Select File:</label>
+                        <select id="fileSelect">
+                            <option value="">Select file to convert...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="processType">Conversion Type:</label>
+                        <select id="processType" onchange="toggleSpeedOptions()">
+                            <option value="">Select conversion type...</option>
+                            <option value="speed-change">🎬 Speed Change</option>
+                            <option value="filter">🎵 Audio Filter</option>
+                            <option value="stabilise">🎭 3D Animation Generation</option>
+                        </select>
+                    </div>
+
+                    <!-- Speed options (only shown when Speed Change is selected) -->
+                    <div id="speedOptions" class="form-group" style="display: none;">
+                        <label for="speedMultiplier">Speed Multiplier:</label>
+                        <select id="speedMultiplier">
+                            <option value="0.2">0.2x (Slow Motion)</option>
+                            <option value="0.5">0.5x (Half Speed)</option>
+                            <option value="1.5">1.5x (Fast Forward)</option>
+                            <option value="2.0">2.0x (Double Speed)</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="startProcessing()" id="processBtn" disabled>Start Conversion</button>
+                    <div id="processStatus"></div>
+                </div>
+            </div>
+
+            <!-- My Files Tab -->
+            <div id="filesTab" class="tab-content">
+                <div class="section">
+                    <h2>📊 My Files</h2>
+                    <button class="btn" onclick="loadFiles()">Refresh File List</button>
+                    <div id="filesList"></div>
+                </div>
+            </div>
+
+            <!-- Conversion Jobs Tab -->
+            <div id="jobsTab" class="tab-content">
+                <div class="section">
+                    <h2>✅ Conversion Jobs</h2>
+                    <button class="btn" onclick="loadCompletedJobs()">Refresh Conversion Jobs</button>
+                    <div id="completedJobsList"></div>
+                </div>
+            </div>
+
+            <!-- Converted Files Tab -->
+            <div id="processedTab" class="tab-content">
+                <div class="section">
+                    <h2>🎬 Converted Files</h2>
+                    <button class="btn" onclick="loadProcessedFiles()">View Converted Files</button>
+                    <div id="processedFilesList"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🚪 Logout</h2>
+                <button class="btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Crop Options Modal -->
+    <div id="cropModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%;">
+            <h2 id="cropModalTitle">🎬 Process File: <span id="cropFileName"></span></h2>
+            <div class="form-group">
+                <label for="cropWidth">Width (pixels):</label>
+                <input type="number" id="cropWidth" placeholder="e.g., 800" min="1">
+            </div>
+            <div class="form-group">
+                <label for="cropHeight">Height (pixels):</label>
+                <input type="number" id="cropHeight" placeholder="e.g., 600" min="1">
+            </div>
+            <div class="form-group">
+                <label for="cropX">X Position (pixels):</label>
+                <input type="number" id="cropX" placeholder="e.g., 0" min="0">
+            </div>
+            <div class="form-group">
+                <label for="cropY">Y Position (pixels):</label>
+                <input type="number" id="cropY" placeholder="e.g., 0" min="0">
+            </div>
+            <div class="form-group">
+                <label for="cropFormat">Processing Type:</label>
+                <select id="cropFormat">
+                    <option value="speed-change">🎬 Speed Change</option>
+                    <option value="filter">🎵 Audio Filter</option>
+                    <option value="stabilise">🎭 3D Animation Generation</option>
+                    <option value="crop">✂️ Crop</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="cropQuality">Quality (JPEG only):</label>
+                <input type="range" id="cropQuality" min="1" max="100" value="80">
+                <span id="cropQualityValue">80%</span>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn" onclick="performProcessing()" id="cropButton">🎬 Process File</button>
+                <button class="btn" onclick="closeCropModal()" style="background: #6c757d;">Cancel</button>
+            </div>
+            <div id="cropStatus" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = null;
+        let selectedFile = null;
+
+        // Tab management
+        function showTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(tab => tab.classList.remove('active'));
+            
+            // Remove active class from all tab buttons
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Show selected tab content
+            const selectedTab = document.getElementById(tabName + 'Tab');
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+            
+            // Add active class to clicked button
+            const activeButton = event.target;
+            activeButton.classList.add('active');
+            
+            // Load data for the selected tab
+            switch(tabName) {
+                case 'files':
+                    loadFiles();
+                    break;
+                case 'jobs':
+                    loadCompletedJobs();
+                    break;
+                case 'processed':
+                    loadProcessedFiles();
+                    break;
+            }
+        }
+
+        // Toggle speed options visibility
+        function toggleSpeedOptions() {
+            const processType = document.getElementById('processType').value;
+            const speedOptions = document.getElementById('speedOptions');
+            
+            if (processType === 'speed-change') {
+                speedOptions.style.display = 'block';
+            } else {
+                speedOptions.style.display = 'none';
+            }
+        }
+
+        // Login
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showStatus('loginStatus', 'Please enter username and password', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    authToken = data.token;
+                    showStatus('loginStatus', `Welcome ${username}!`, 'success');
+                    document.getElementById('loginSection').style.display = 'none';
+                    document.getElementById('mainSection').style.display = 'block';
+                    
+                    // Load initial data for the active tab (upload tab)
+                    loadFiles(); // Load files for the file selector
+                } else {
+                    showStatus('loginStatus', data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('loginStatus', 'Login failed: ' + error.message, 'error');
+            }
+        }
+
+        // Logout
+        function logout() {
+            authToken = null;
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('mainSection').style.display = 'none';
+            showStatus('loginStatus', 'Logged out', 'info');
+        }
+
+        // Select file
+        function handleFileSelect() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (file) {
+                const fileSizeMB = file.size / 1024 / 1024;
+                const maxSizeMB = 500;
+                
+                if (fileSizeMB > maxSizeMB) {
+                    showStatus('fileInfo', `❌ File too large! Current: ${fileSizeMB.toFixed(2)} MB, Maximum allowed: ${maxSizeMB} MB`, 'error');
+                    document.getElementById('uploadBtn').disabled = true;
+                    return;
+                }
+
+                selectedFile = file;
+                document.getElementById('fileInfo').style.display = 'block';
+                document.getElementById('fileInfo').innerHTML = `
+                    <strong>Selected File:</strong> ${file.name}<br>
+                    <strong>Size:</strong> ${fileSizeMB.toFixed(2)} MB<br>
+                    <strong>Type:</strong> ${file.type}<br>
+                    <span style="color: green;">✅ File size meets requirements</span>
+                `;
+                document.getElementById('uploadBtn').disabled = false;
+            }
+        }
+
+        // Upload file
+        async function uploadFile() {
+            if (!selectedFile) {
+                showStatus('uploadStatus', 'Please select a file first', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('media', selectedFile);
+
+            try {
+                showStatus('uploadStatus', 'Uploading...', 'info');
+
+                const response = await fetch('/api/media/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('uploadStatus', `File uploaded successfully! File ID: ${data.fileId}`, 'success');
+                    loadFiles();
+                } else {
+                    showStatus('uploadStatus', data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('uploadStatus', 'Upload failed: ' + error.message, 'error');
+            }
+        }
+
+        // Start conversion
+        async function startProcessing() {
+            const fileId = document.getElementById('fileSelect').value;
+            const processType = document.getElementById('processType').value;
+
+            if (!fileId || !processType) {
+                showStatus('processStatus', 'Please select file and conversion type', 'error');
+                return;
+            }
+
+            let endpoint = '';
+            let requestData = {};
+
+            if (processType === 'speed-change') {
+                endpoint = `/api/media/process-video/${fileId}`;
+                const speedMultiplier = document.getElementById('speedMultiplier').value;
+                requestData = { 
+                    processType: 'speed-change',
+                    speedMultiplier: parseFloat(speedMultiplier)
+                };
+            } else if (processType === 'filter') {
+                endpoint = `/api/media/process-audio/${fileId}`;
+                requestData = { processType: 'filter' };
+            } else if (processType === 'stabilise') {
+                endpoint = '/api/media/generate-3d-animation';
+                requestData = { duration: 30 };
+            }
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('processStatus', `Conversion started! Job ID: ${data.jobId}`, 'success');
+                } else {
+                    showStatus('processStatus', data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('processStatus', 'Conversion failed: ' + error.message, 'error');
+            }
+        }
+
+        // Load file list
+        async function loadFiles() {
+            try {
+                const response = await fetch('/api/media/files', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const fileSelect = document.getElementById('fileSelect');
+                    fileSelect.innerHTML = '<option value="">Select file to process...</option>';
+
+                    const filesList = document.getElementById('filesList');
+                    filesList.innerHTML = '<h3>My Files</h3>';
+
+                    if (data.files.length === 0) {
+                        filesList.innerHTML += '<p>No files found</p>';
+                        return;
+                    }
+
+                    data.files.forEach(file => {
+                        // Add to process selector
+                        const option = document.createElement('option');
+                        option.value = file.id;
+                        option.textContent = `${file.original_filename} (${(file.file_size / 1024 / 1024).toFixed(2)} MB)`;
+                        fileSelect.appendChild(option);
+
+                        // Add to file list with crop functionality
+                        const fileDiv = document.createElement('div');
+                        fileDiv.style.cssText = 'border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px;';
+                        
+                        // Check if file is an image or video for crop functionality
+                        const isImage = file.file_type === 'image';
+                        const isVideo = file.file_type === 'video';
+                        const canCrop = isImage || isVideo;
+                        
+                        fileDiv.innerHTML = `
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div style="flex: 1;">
+                                    <strong>File ID:</strong> ${file.id}<br>
+                                    <strong>Filename:</strong> ${file.original_filename}<br>
+                                    <strong>Size:</strong> ${(file.file_size / 1024 / 1024).toFixed(2)} MB<br>
+                                    <strong>Type:</strong> ${file.file_type || 'unknown'}
+                                </div>
+                                <div style="text-align: right;">
+                                    ${canCrop ? `
+                                        <button class="btn" onclick="showCropOptions(${file.id}, '${file.original_filename}', '${file.file_type}')" style="margin-bottom: 5px;">
+                                            ✂️ ${isImage ? 'Crop Image' : 'Crop Video'}
+                                        </button>
+                                    ` : ''}
+                                    <button class="btn" onclick="deleteFile(${file.id})" style="background: #dc3545;">
+                                        🗑️ Delete
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        filesList.appendChild(fileDiv);
+                    });
+
+                    document.getElementById('processBtn').disabled = false;
+                }
+            } catch (error) {
+                console.error('Failed to load files:', error);
+            }
+        }
+
+        // Load processed files list
+        async function loadProcessedFiles() {
+            try {
+                const response = await fetch('/api/media/processed-files', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const processedFilesList = document.getElementById('processedFilesList');
+                    processedFilesList.innerHTML = '<h3>🎬 Processed Files</h3>';
+                    
+                    if (data.processedFiles.length === 0) {
+                        processedFilesList.innerHTML += '<p>No processed files found</p>';
+                        return;
+                    }
+
+                    processedFilesList.innerHTML += `
+                        <div class="status info" style="margin-bottom: 20px;">
+                            <strong>📊 Summary:</strong> Found ${data.totalFiles} processed files
+                            <br><strong>📁 Output Directory:</strong> ${data.processedDir}
+                        </div>
+                    `;
+                    
+                    data.processedFiles.forEach(file => {
+                        // Determine processing type from filename
+                        let processType = 'Unknown';
+                        let originalName = file.original_filename;
+                        let icon = '📄';
+                        
+                        if (file.original_filename.startsWith('cropped_')) {
+                            processType = 'Image Cropping';
+                            originalName = file.original_filename.replace('cropped_', '').replace(/_\d+\.\w+$/, '');
+                            icon = '✂️';
+                        } else if (file.original_filename.startsWith('resized_')) {
+                            processType = 'Image Resizing';
+                            originalName = file.original_filename.replace('resized_', '').replace(/_\d+\.\w+$/, '');
+                            icon = '🖼️';
+                        } else if (file.original_filename.startsWith('processed_')) {
+                            processType = 'Media Processing';
+                            originalName = file.original_filename.replace('processed_', '').replace(/_\d+\.\w+$/, '');
+                            icon = '🎬';
+                        }
+                        
+                        // Get file extension
+                        const fileExt = file.original_filename.split('.').pop().toUpperCase();
+                        
+                        const fileDiv = document.createElement('div');
+                        fileDiv.style.cssText = 'border: 1px solid #28a745; padding: 20px; margin: 15px 0; border-radius: 8px; background: #f8fff9; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
+                        fileDiv.innerHTML = `
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div style="flex: 1;">
+                                    <div style="font-size: 1.2em; margin-bottom: 10px;">
+                                        ${icon} <strong>${processType}</strong>
+                                    </div>
+                                    <div style="margin-bottom: 8px;">
+                                        <strong>📄 Processed File:</strong> ${file.original_filename}
+                                    </div>
+                                    <div style="margin-bottom: 8px;">
+                                        <strong>📁 Original Name:</strong> ${originalName}
+                                    </div>
+                                    <div style="margin-bottom: 8px;">
+                                        <strong>💾 File Size:</strong> ${(file.size / 1024).toFixed(2)} KB
+                                    </div>
+                                    <div style="margin-bottom: 8px;">
+                                        <strong>📅 Created:</strong> ${new Date(file.created).toLocaleString()}
+                                    </div>
+                                    <div style="margin-bottom: 8px;">
+                                        <strong>🔧 File Type:</strong> ${file.file_type || 'Unknown'}
+                                    </div>
+                                    <div style="margin-bottom: 8px;">
+                                        <strong>📂 Format:</strong> ${fileExt}
+                                    </div>
+                                </div>
+                                <div style="text-align: right; margin-left: 20px;">
+                                    <button class="btn" onclick="downloadFile('${file.file_path}', '${file.original_filename}')" style="background: #28a745; margin-bottom: 5px;">
+                                        ⬇️ Download
+                                    </button>
+                                    <button class="btn" onclick="deleteProcessedFile(${file.id})" style="background: #dc3545;">
+                                        🗑️ Delete
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        processedFilesList.appendChild(fileDiv);
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load processed files:', error);
+                const processedFilesList = document.getElementById('processedFilesList');
+                processedFilesList.innerHTML = '<h3>🎬 Processed Files</h3><div class="status error">Failed to load processed files: ' + error.message + '</div>';
+            }
+        }
+
+        // Load completed jobs list
+        async function loadCompletedJobs() {
+            try {
+                const response = await fetch('/api/media/completed-jobs', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const completedJobsList = document.getElementById('completedJobsList');
+                    completedJobsList.innerHTML = '<h3>Completed Jobs</h3>';
+                    
+                    if (data.completedJobs.length === 0) {
+                        completedJobsList.innerHTML += '<p>No conversion jobs found</p>';
+                        return;
+                    }
+
+                    completedJobsList.innerHTML += `<p><strong>Total Conversion Jobs:</strong> ${data.totalJobs}</p>`;
+                    
+                    data.completedJobs.forEach(job => {
+                        const jobDiv = document.createElement('div');
+                        jobDiv.className = 'job-card';
+                        
+                        const processTypeLabel = {
+                            'speed-change': '🎬 Speed Change',
+                            'filter': '🎵 Audio Filter',
+                            'stabilise': '🎭 3D Animation Generation'
+                        }[job.processType] || job.processType;
+                        
+                        const duration = job.duration ? `${(job.duration / 1000).toFixed(1)}s` : 'N/A';
+                        
+                        // Add speed multiplier info for speed change jobs
+                        let speedInfo = '';
+                        if (job.processType === 'speed-change' && job.speedMultiplier) {
+                            speedInfo = `<br><strong>Speed Multiplier:</strong> ${job.speedMultiplier}x`;
+                        }
+                        
+                        jobDiv.innerHTML = `
+                            <div class="job-header">
+                                <span class="job-id">Job ID: ${job.id}</span>
+                                <span class="job-status">${job.status}</span>
+                            </div>
+                            <div class="job-info">
+                                <strong>Process Type:</strong> ${processTypeLabel}${speedInfo}<br>
+                                <strong>Original File:</strong> ${job.originalFilename}<br>
+                                <strong>Start Time:</strong> ${new Date(job.startTime).toLocaleString()}<br>
+                                <strong>Completion Time:</strong> ${new Date(job.completionTime).toLocaleString()}<br>
+                                <strong>Processing Duration:</strong> ${duration}
+                            </div>
+                            <div class="job-note">
+                                No output files saved - processing completed in memory
+                            </div>
+                        `;
+                        completedJobsList.appendChild(jobDiv);
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load completed jobs:', error);
+            }
+        }
+
+        // Crop functionality
+        let currentCropFileId = null;
+        let currentCropFileType = null;
+
+        function showCropOptions(fileId, fileName, fileType) {
+            currentCropFileId = fileId;
+            currentCropFileType = fileType; // Store file type for later use
+            document.getElementById('cropFileName').textContent = fileName;
+            document.getElementById('cropModal').style.display = 'block';
+            
+            // Update modal title and button based on file type
+            const modalTitle = document.getElementById('cropModalTitle');
+            const cropButton = document.getElementById('cropButton');
+            if (modalTitle) {
+                modalTitle.textContent = `🎬 Process ${fileType === 'video' ? 'Video' : 'Image'}: ${fileName}`;
+            }
+            if (cropButton) {
+                cropButton.textContent = '🎬 Process File';
+            }
+            
+            // Reset form values
+            document.getElementById('cropWidth').value = '';
+            document.getElementById('cropHeight').value = '';
+            document.getElementById('cropX').value = '0';
+            document.getElementById('cropY').value = '0';
+            document.getElementById('cropFormat').value = 'crop'; // Default to crop for both image and video
+            document.getElementById('cropQuality').value = '80';
+            document.getElementById('cropQualityValue').textContent = '80%';
+            document.getElementById('cropStatus').innerHTML = '';
+        }
+
+        function closeCropModal() {
+            document.getElementById('cropModal').style.display = 'none';
+            currentCropFileId = null;
+        }
+
+        // Update quality display
+        document.addEventListener('DOMContentLoaded', function() {
+            const qualitySlider = document.getElementById('cropQuality');
+            const qualityValue = document.getElementById('cropQualityValue');
+            if (qualitySlider && qualityValue) {
+                qualitySlider.addEventListener('input', function() {
+                    qualityValue.textContent = this.value + '%';
+                });
+            }
+        });
+
+        async function performProcessing() {
+            if (!currentCropFileId) {
+                showStatus('cropStatus', 'No file selected for processing', 'error');
+                return;
+            }
+
+            const processType = document.getElementById('cropFormat').value;
+            
+            // Only validate crop parameters if crop is selected
+            if (processType === 'crop') {
+                const width = parseInt(document.getElementById('cropWidth').value);
+                const height = parseInt(document.getElementById('cropHeight').value);
+                const x = parseInt(document.getElementById('cropX').value);
+                const y = parseInt(document.getElementById('cropY').value);
+                const quality = parseInt(document.getElementById('cropQuality').value);
+
+                if (!width || !height || width <= 0 || height <= 0) {
+                    showStatus('cropStatus', 'Please enter valid width and height for cropping', 'error');
+                    return;
+                }
+
+                if (x < 0 || y < 0) {
+                    showStatus('cropStatus', 'X and Y positions must be non-negative for cropping', 'error');
+                    return;
+                }
+            }
+
+            try {
+                const processType = document.getElementById('cropFormat').value;
+                showStatus('cropStatus', `Processing ${processType} request...`, 'info');
+
+                // Choose endpoint based on processing type
+                let endpoint;
+                let requestData = {};
+                
+                if (processType === 'speed-change') {
+                    endpoint = `/api/media/process-video/${currentCropFileId}`;
+                    requestData = { 
+                        processType: 'speed-change',
+                        speedMultiplier: 1.5 // Default speed
+                    };
+                } else if (processType === 'filter') {
+                    endpoint = `/api/media/process-audio/${currentCropFileId}`;
+                    requestData = { processType: 'filter' };
+                } else if (processType === 'stabilise') {
+                    endpoint = '/api/media/generate-3d-animation';
+                    requestData = { duration: 30 };
+                } else if (processType === 'crop') {
+                    // Use crop endpoint based on file type
+                    const isVideo = currentCropFileType === 'video';
+                    const width = parseInt(document.getElementById('cropWidth').value);
+                    const height = parseInt(document.getElementById('cropHeight').value);
+                    const x = parseInt(document.getElementById('cropX').value);
+                    const y = parseInt(document.getElementById('cropY').value);
+                    const quality = parseInt(document.getElementById('cropQuality').value);
+                    
+                    endpoint = isVideo ? `/api/media/crop-video/${currentCropFileId}` : `/api/media/crop-image/${currentCropFileId}`;
+                    requestData = {
+                        width,
+                        height,
+                        x,
+                        y,
+                        format: 'jpeg', // Default format for crop
+                        quality
+                    };
+                }
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const processType = document.getElementById('cropFormat').value;
+                    let successMessage = '';
+                    
+                    if (processType === 'crop') {
+                        const fileType = currentCropFileType === 'video' ? 'Video' : 'Image';
+                        successMessage = `${fileType} cropped successfully! Output: ${data.filename}`;
+                    } else if (processType === 'speed-change') {
+                        successMessage = `Video speed change completed! Job ID: ${data.jobId}`;
+                    } else if (processType === 'filter') {
+                        successMessage = `Audio filter applied! Job ID: ${data.jobId}`;
+                    } else if (processType === 'stabilise') {
+                        successMessage = `3D animation generation completed! Job ID: ${data.jobId}`;
+                    }
+                    
+                    showStatus('cropStatus', successMessage, 'success');
+                    setTimeout(() => {
+                        closeCropModal();
+                        loadFiles(); // Refresh file list
+                    }, 2000);
+                } else {
+                    showStatus('cropStatus', data.error || 'Processing failed', 'error');
+                }
+            } catch (error) {
+                showStatus('cropStatus', 'Crop failed: ' + error.message, 'error');
+            }
+        }
+
+        // Delete file function
+        async function deleteFile(fileId) {
+            if (!confirm('Are you sure you want to delete this file? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/media/delete-file/${fileId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    showStatus('filesList', 'File deleted successfully', 'success');
+                    loadFiles(); // Refresh file list
+                } else {
+                    const data = await response.json();
+                    showStatus('filesList', data.error || 'Delete failed', 'error');
+                }
+            } catch (error) {
+                showStatus('filesList', 'Delete failed: ' + error.message, 'error');
+            }
+        }
+
+        // Download processed file
+        async function downloadFile(filePath, filename) {
+            try {
+                const response = await fetch(`/api/media/download/${encodeURIComponent(filePath)}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    const data = await response.json();
+                    showStatus('processedFilesList', data.error || 'Download failed', 'error');
+                }
+            } catch (error) {
+                showStatus('processedFilesList', 'Download failed: ' + error.message, 'error');
+            }
+        }
+
+        // Delete processed file
+        async function deleteProcessedFile(fileId) {
+            if (!confirm('Are you sure you want to delete this processed file? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/media/delete-file/${fileId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    showStatus('processedFilesList', 'Processed file deleted successfully', 'success');
+                    loadProcessedFiles(); // Refresh processed files list
+                } else {
+                    const data = await response.json();
+                    showStatus('processedFilesList', data.error || 'Delete failed', 'error');
+                }
+            } catch (error) {
+                showStatus('processedFilesList', 'Delete failed: ' + error.message, 'error');
+            }
+        }
+
+        // Show status
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+            setTimeout(() => element.innerHTML = '', 5000);
+        }
+    </script>
+</body>
+</html>

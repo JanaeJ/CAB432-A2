@@ -1,0 +1,753 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Media Processor API Infrastructure - CloudFormation Template'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: 'prod'
+    AllowedValues: ['dev', 'staging', 'prod']
+    Description: 'Environment name'
+  
+  DomainName:
+    Type: String
+    Default: 'your-subdomain.cab432.com'
+    Description: 'Domain name for the application'
+  
+  QutUsername:
+    Type: String
+    Description: 'QUT username for resource tagging'
+    Default: 'n1234567@qut.edu.au'
+  
+  AllowedCIDR:
+    Type: String
+    Default: '0.0.0.0/0'
+    Description: 'CIDR block allowed to access the application'
+
+Resources:
+  # S3 Bucket for file storage
+  MediaFilesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${AWS::StackName}-media-files-${Environment}'
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteIncompleteMultipartUploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+          - Id: TransitionToIA
+            Status: Enabled
+            Transitions:
+              - StorageClass: STANDARD_IA
+                TransitionInDays: 30
+      NotificationConfiguration:
+        CloudWatchConfigurations:
+          - Event: 's3:ObjectCreated:*'
+            CloudWatchConfiguration:
+              LogGroupName: !Ref S3AccessLogGroup
+      Tags:
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+        - Key: Environment
+          Value: !Ref Environment
+
+  # DynamoDB Table for metadata
+  MediaFilesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-MediaFiles-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: fileId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: createdAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: fileId
+          KeyType: HASH
+        - AttributeName: userId
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: UserIdIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+            - AttributeName: createdAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Processing Jobs Table
+  ProcessingJobsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-ProcessingJobs-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: jobId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: createdAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: jobId
+          KeyType: HASH
+        - AttributeName: userId
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: UserIdIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+            - AttributeName: createdAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      Tags:
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Cognito User Pool
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub '${AWS::StackName}-UserPool-${Environment}'
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+      AutoVerifiedAttributes:
+        - email
+      UsernameAttributes:
+        - email
+        - username
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Required: true
+        - Name: username
+          AttributeDataType: String
+          Required: true
+          Mutable: true
+        - Name: role
+          AttributeDataType: String
+          Mutable: true
+      Tags:
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Cognito User Pool Client
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: !Sub '${AWS::StackName}-Client-${Environment}'
+      GenerateSecret: true
+      ExplicitAuthFlows:
+        - ADMIN_NO_SRP_AUTH
+        - USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      SupportedIdentityProviders:
+        - COGNITO
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+      AccessTokenValidity: 1
+      IdTokenValidity: 1
+      RefreshTokenValidity: 30
+
+  # ElastiCache Redis Cluster
+  RedisCluster:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties:
+      ReplicationGroupId: !Sub '${AWS::StackName}-redis-${Environment}'
+      Description: 'Redis cluster for Media Processor API caching'
+      NodeType: cache.t3.micro
+      Port: 6379
+      NumCacheClusters: 1
+      Engine: redis
+      EngineVersion: '7.0'
+      ParameterGroupName: default.redis7
+      SecurityGroupIds:
+        - !Ref RedisSecurityGroup
+      SubnetGroupName: !Ref RedisSubnetGroup
+      AtRestEncryptionEnabled: true
+      TransitEncryptionEnabled: true
+      AuthToken: !Sub '${AWS::NoValue}' # Disable auth token for simplicity
+      Tags:
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Redis Subnet Group
+  RedisSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: 'Subnet group for Redis cluster'
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+
+  # RDS PostgreSQL Database (optional - for additional persistence)
+  Database:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: !Sub '${AWS::StackName}-db-${Environment}'
+      DBName: media_processor
+      DBInstanceClass: db.t3.micro
+      Engine: postgres
+      EngineVersion: '15.4'
+      MasterUsername: admin
+      MasterUserPassword: !Sub '${DatabasePassword}'
+      AllocatedStorage: 20
+      StorageType: gp2
+      VPCSecurityGroups:
+        - !Ref DatabaseSecurityGroup
+      DBSubnetGroupName: !Ref DatabaseSubnetGroup
+      BackupRetentionPeriod: 7
+      MultiAZ: false
+      PubliclyAccessible: false
+      StorageEncrypted: true
+      Tags:
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Database Subnet Group
+  DatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: 'Subnet group for RDS database'
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+
+  # VPC and Networking
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-VPC-${Environment}'
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+
+  # Internet Gateway
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-IGW-${Environment}'
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+
+  # Attach Internet Gateway to VPC
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  # Public Subnets
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-PublicSubnet1-${Environment}'
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-PublicSubnet2-${Environment}'
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+
+  # Private Subnets
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: 10.0.11.0/24
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-PrivateSubnet1-${Environment}'
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: 10.0.12.0/24
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-PrivateSubnet2-${Environment}'
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+
+  # Route Tables
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-PublicRT-${Environment}'
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-PrivateRT-${Environment}'
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+
+  # Routes
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  # Route Table Associations
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet1
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet2
+
+  # Security Groups
+  WebSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${AWS::StackName}-WebSG-${Environment}'
+      GroupDescription: 'Security group for web servers'
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Ref AllowedCIDR
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Ref AllowedCIDR
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: !Ref AllowedCIDR
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-WebSG-${Environment}'
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+
+  DatabaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${AWS::StackName}-DatabaseSG-${Environment}'
+      GroupDescription: 'Security group for database'
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref WebSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-DatabaseSG-${Environment}'
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+
+  RedisSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${AWS::StackName}-RedisSG-${Environment}'
+      GroupDescription: 'Security group for Redis cluster'
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          SourceSecurityGroupId: !Ref WebSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-RedisSG-${Environment}'
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+
+  # IAM Roles
+  EC2InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-EC2Role-${Environment}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+        - arn:aws:iam::aws:policy/AmazonCognitoPowerUser
+        - arn:aws:iam::aws:policy/AmazonElastiCacheFullAccess
+        - arn:aws:iam::aws:policy/AmazonRDSFullAccess
+        - arn:aws:iam::aws:policy/AmazonSSMFullAccess
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+      Tags:
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+
+  # IAM Instance Profile
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref EC2InstanceRole
+
+  # Parameter Store Parameters
+  AppURLParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/media-processor/${Environment}/app-url'
+      Type: String
+      Value: !Sub 'https://${DomainName}'
+      Description: 'Application URL'
+
+  APIURLParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/media-processor/${Environment}/api-url'
+      Type: String
+      Value: !Sub 'https://${DomainName}/api'
+      Description: 'API URL'
+
+  FrontendURLParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/media-processor/${Environment}/frontend-url'
+      Type: String
+      Value: !Sub 'https://${DomainName}'
+      Description: 'Frontend URL'
+
+  MaxFileSizeParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/media-processor/${Environment}/max-file-size'
+      Type: String
+      Value: '500MB'
+      Description: 'Maximum file size for uploads'
+
+  AllowedFileTypesParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/media-processor/${Environment}/allowed-file-types'
+      Type: String
+      Value: 'mp4,avi,mov,mkv,mp3,wav,flac,aac,jpg,jpeg,png,gif'
+      Description: 'Allowed file types'
+
+  # Secrets Manager Secrets
+  DatabaseCredentialsSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '/media-processor/${Environment}/database-credentials'
+      Description: 'Database connection credentials'
+      SecretString: !Sub |
+        {
+          "host": "${Database.Endpoint.Address}",
+          "port": "${Database.Endpoint.Port}",
+          "database": "media_processor",
+          "username": "admin",
+          "password": "${DatabasePassword}",
+          "ssl": "true"
+        }
+      Tags:
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+
+  JWTSecretSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '/media-processor/${Environment}/jwt-secret'
+      Description: 'JWT secret key for authentication'
+      SecretString: !Sub |
+        {
+          "jwt_secret": "your-super-secure-jwt-secret-key-${Environment}",
+          "createdAt": "${AWS::Region}"
+        }
+      Tags:
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+
+  # CloudWatch Log Groups
+  S3AccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/s3/${AWS::StackName}-${Environment}'
+      RetentionInDays: 30
+
+  ApplicationLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/ec2/media-processor-${Environment}'
+      RetentionInDays: 14
+
+  # Route53 Hosted Zone (if domain is managed in Route53)
+  HostedZone:
+    Type: AWS::Route53::HostedZone
+    Condition: CreateHostedZone
+    Properties:
+      Name: !Ref DomainName
+      HostedZoneConfig:
+        Comment: !Sub 'Hosted zone for ${DomainName}'
+
+  # Route53 Record
+  DNSRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDNSRecord
+    Properties:
+      HostedZoneId: !If [CreateHostedZone, !Ref HostedZone, !Ref ExistingHostedZoneId]
+      Name: !Ref DomainName
+      Type: CNAME
+      TTL: 300
+      ResourceRecords:
+        - !Ref EC2Instance # This would be your EC2 instance public DNS
+
+  # EC2 Instance (placeholder - you would configure this based on your deployment)
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0c02fb55956c7d316 # Amazon Linux 2 AMI
+      InstanceType: t3.micro
+      SecurityGroupIds:
+        - !Ref WebSecurityGroup
+      SubnetId: !Ref PublicSubnet1
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install -y docker git
+          systemctl start docker
+          systemctl enable docker
+          usermod -a -G docker ec2-user
+          
+          # Install Node.js
+          curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
+          yum install -y nodejs
+          
+          # Clone and setup application
+          git clone https://github.com/your-repo/media-processor-api.git /home/ec2-user/app
+          cd /home/ec2-user/app
+          npm install
+          
+          # Set environment variables
+          echo "AWS_REGION=${AWS::Region}" >> .env
+          echo "S3_BUCKET_NAME=${MediaFilesBucket}" >> .env
+          echo "DYNAMODB_TABLE_NAME=${MediaFilesTable}" >> .env
+          echo "COGNITO_USER_POOL_ID=${UserPool}" >> .env
+          echo "COGNITO_CLIENT_ID=${UserPoolClient}" >> .env
+          
+          # Start application
+          npm start
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-EC2-${Environment}'
+        - Key: purpose
+          Value: assessment-2
+        - Key: qut-username
+          Value: !Ref QutUsername
+
+Conditions:
+  CreateHostedZone: !Equals [!Ref CreateNewHostedZone, 'true']
+  CreateDNSRecord: !Or [!Condition: CreateHostedZone, !Not [!Equals [!Ref ExistingHostedZoneId, '']]]
+
+Parameters:
+  DatabasePassword:
+    Type: String
+    NoEcho: true
+    Default: 'ChangeThisPassword123!'
+    Description: 'Database master password'
+    MinLength: 8
+    MaxLength: 128
+
+  CreateNewHostedZone:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: 'Whether to create a new hosted zone or use existing one'
+
+  ExistingHostedZoneId:
+    Type: String
+    Default: ''
+    Description: 'Existing hosted zone ID if not creating new one'
+
+Outputs:
+  MediaFilesBucketName:
+    Description: 'S3 Bucket for media files'
+    Value: !Ref MediaFilesBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-MediaFilesBucket'
+
+  MediaFilesTableName:
+    Description: 'DynamoDB table for media files metadata'
+    Value: !Ref MediaFilesTable
+    Export:
+      Name: !Sub '${AWS::StackName}-MediaFilesTable'
+
+  UserPoolId:
+    Description: 'Cognito User Pool ID'
+    Value: !Ref UserPool
+    Export:
+      Name: !Sub '${AWS::StackName}-UserPool'
+
+  UserPoolClientId:
+    Description: 'Cognito User Pool Client ID'
+    Value: !Ref UserPoolClient
+    Export:
+      Name: !Sub '${AWS::StackName}-UserPoolClient'
+
+  RedisEndpoint:
+    Description: 'ElastiCache Redis endpoint'
+    Value: !GetAtt RedisCluster.RedisEndpoint.Address
+    Export:
+      Name: !Sub '${AWS::StackName}-RedisEndpoint'
+
+  DatabaseEndpoint:
+    Description: 'RDS Database endpoint'
+    Value: !GetAtt Database.Endpoint.Address
+    Export:
+      Name: !Sub '${AWS::StackName}-DatabaseEndpoint'
+
+  VPCId:
+    Description: 'VPC ID'
+    Value: !Ref VPC
+    Export:
+      Name: !Sub '${AWS::StackName}-VPC'
+
+  EC2InstanceId:
+    Description: 'EC2 Instance ID'
+    Value: !Ref EC2Instance
+    Export:
+      Name: !Sub '${AWS::StackName}-EC2Instance'
+
+  ApplicationURL:
+    Description: 'Application URL'
+    Value: !Sub 'https://${DomainName}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApplicationURL'
