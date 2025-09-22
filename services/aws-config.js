@@ -31,7 +31,14 @@ const {
   AssociateSoftwareTokenCommand,
   VerifySoftwareTokenCommand,
   SetUserMFAPreferenceCommand,
-  AdminSetUserMFAPreferenceCommand
+  AdminSetUserMFAPreferenceCommand,
+  CognitoIdentityProviderClient,
+  InitiateAuthCommand,
+  RespondToAuthChallengeCommand,
+  AdminSetUserPasswordCommand,
+  ConfirmSignUpCommand,
+  AdminConfirmSignUpCommand,
+  AdminGetUserCommand
 } = require('@aws-sdk/client-cognito-identity-provider');
 
 const { 
